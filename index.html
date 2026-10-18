@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Six de mi Seven ❤️</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: radial-gradient(circle at 50% 30%, #1f080e 0%, #0d0306 70%, #050102 100%);
+      color: #f3f4f6;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+    .font-serif-title {
+      font-family: 'Cinzel', serif;
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(212, 175, 55, 0.15);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+    }
+    .gold-glow {
+      box-shadow: 0 0 30px rgba(212, 175, 55, 0.25);
+    }
+    .gold-gradient-text {
+      background: linear-gradient(135deg, #fff2cc 0%, #e6c667 50%, #b8860b 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .gold-button {
+      background: linear-gradient(135deg, #d4af37 0%, #aa7c11 100%);
+      color: #0d0306;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    .gold-button:hover {
+      background: linear-gradient(135deg, #f3e5ab 0%, #c59b27 100%);
+      box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+      transform: translateY(-1px);
+    }
+    .puzzle-board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 4px;
+      width: 320px;
+      height: 320px;
+      background: rgba(212, 175, 55, 0.2);
+      padding: 6px;
+      border-radius: 16px;
+      border: 1px solid rgba(212, 175, 55, 0.3);
+    }
+    .puzzle-tile {
+      background-size: 320px 320px;
+      cursor: pointer;
+      transition: transform 0.15s ease;
+      border-radius: 8px;
+    }
+    .puzzle-tile:hover {
+      transform: scale(0.97);
+    }
+    .puzzle-empty {
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px dashed rgba(212, 175, 55, 0.2);
+      border-radius: 8px;
+    }
+    .memory-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    .card-flip { perspective: 1000px; }
+    .card-inner {
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      transform-style: preserve-3d;
+    }
+    .card-flip.flipped .card-inner { transform: rotateY(180deg); }
+    .card-front, .card-back {
+      backface-visibility: hidden;
+      border-radius: 12px;
+    }
+    .card-back { transform: rotateY(180deg); }
+
+    /* Animaciones de validación de preguntas */
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+    .btn-wrong {
+      animation: shake 0.4s ease-in-out;
+      background-color: rgba(239, 68, 68, 0.2) !important;
+      border-color: rgba(239, 68, 68, 0.6) !important;
+      color: #fca5a5 !important;
+    }
+    .btn-correct {
+      background-color: rgba(34, 197, 94, 0.2) !important;
+      border-color: rgba(34, 197, 94, 0.6) !important;
+      color: #86efac !important;
+    }
+  </style>
+</head>
+<body class="relative flex flex-col justify-between min-h-screen">
+
+  <audio id="bg-music-audio" loop src="cancion.mp3"></audio>
+  <canvas id="bg-canvas" class="fixed inset-0 pointer-events-none z-0"></canvas>
+
+  <!-- Header / Navbar -->
+  <header class="relative z-10 w-full px-8 py-5 flex justify-between items-center glass-card border-b border-yellow-500/10">
+    <div class="flex items-center gap-3">
+      <div class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></div>
+      <h1 class="font-serif-title text-lg md:text-xl tracking-widest gold-gradient-text uppercase">Six de mi Seven</h1>
+    </div>
+    <button id="music-toggle" class="px-5 py-2 text-xs font-medium rounded-full border border-yellow-500/30 bg-black/40 hover:bg-black/60 transition flex items-center gap-2">
+      <span id="music-icon">🎵</span>
+      <span id="music-btn-text">Música OFF</span>
+    </button>
+  </header>
+
+  <!-- Contenedor Principal -->
+  <main class="relative z-10 flex-grow flex items-center justify-center p-4 my-6">
+
+    <!-- SECCIÓN: LOGIN -->
+    <section id="sec-login" class="w-full max-w-md glass-card rounded-3xl p-8 md:p-10 text-center">
+      <div class="w-16 h-16 mx-auto mb-6 flex items-center justify-center bg-yellow-500/10 rounded-2xl border border-yellow-500/30 gold-glow">
+        <span class="text-2xl">🔐</span>
+      </div>
+      
+      <h2 class="font-serif-title text-2xl font-bold tracking-wide gold-gradient-text mb-2">Acceso Privado</h2>
+      <p class="text-gray-400 text-xs mb-8">Ingresa la fecha especial para acceder a esta experiencia.</p>
+
+      <form onsubmit="handleLogin(event)" class="space-y-4 text-left">
+        <div>
+
+        </div>
+
+        <div>
+          <label class="block text-xs text-gray-400 mb-1 font-medium">Clave de Acceso</label>
+          <input type="password" id="login-pass" placeholder="DDMMAA" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" autocomplete="off" required 
+            class="w-full px-4 py-3 rounded-xl bg-black/50 border border-yellow-500/20 text-sm focus:outline-none focus:border-yellow-500/60 transition text-gray-200">
+          <p class="text-[10px] text-gray-500 mt-1 italic">Pista: Una fecha especial (6 números).</p>
+        </div>
+
+        <button type="submit" class="w-full py-3.5 mt-2 rounded-xl gold-button text-sm tracking-wide font-semibold shadow-lg">
+          Iniciar Sesión →
+        </button>
+      </form>
+
+      <p id="login-error" class="text-xs text-red-400 mt-4 hidden"></p>
+    </section>
+
+    <!-- SECCIÓN: BUSCAR LA LLAVE (INTRO) -->
+    <section id="sec-intro" class="hidden w-full max-w-xl glass-card rounded-3xl p-8 text-center">
+      <div class="mb-6">
+        <div class="w-20 h-20 mx-auto mb-4 flex items-center justify-center bg-yellow-500/10 rounded-full border border-yellow-500/30 gold-glow">
+          <span class="text-4xl">🔒</span>
+        </div>
+        <h2 class="font-serif-title text-2xl font-bold gold-gradient-text mb-2">Portal de Acceso</h2>
+        <p class="text-gray-300 text-xs md:text-sm max-w-md mx-auto">
+          Bienvenida. Encuentra la llave oculta dentro de uno de los cofres para desbloquear los desafíos.
+        </p>
+      </div>
+
+      <div id="chest-grid" class="grid grid-cols-4 gap-4 my-8"></div>
+      <p id="chest-hint" class="text-xs text-yellow-400/80 italic min-h-[20px]"></p>
+    </section>
+
+    <!-- SECCIÓN: MENU PRINCIPAL (HUB) -->
+    <section id="sec-hub" class="hidden w-full max-w-3xl glass-card rounded-3xl p-8 md:p-10 text-center">
+      <h2 class="font-serif-title text-3xl md:text-4xl gold-gradient-text mb-2">Desafíos Especiales</h2>
+      <p class="text-gray-400 text-xs md:text-sm mb-10">Completa cada etapa para desbloquear los niveles</p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div id="btn-opt-1" onclick="openGame(1)" class="glass-card p-6 rounded-2xl cursor-pointer hover:border-yellow-500/40 transition">
+          <div class="text-3xl mb-3">❓</div>
+          <h3 class="font-semibold text-base mb-1">Nivel 1</h3>
+          <p class="text-xs text-gray-400">Preguntas Especiales</p>
+          <span id="status-1" class="inline-block mt-4 px-3 py-1 text-[11px] rounded-full bg-yellow-500/10 text-yellow-300 border border-yellow-500/30">Disponible</span>
+        </div>
+
+        <div id="btn-opt-2" onclick="openGame(2)" class="glass-card p-6 rounded-2xl cursor-not-allowed opacity-40 transition">
+          <div class="text-3xl mb-3">🧩</div>
+          <h3 class="font-semibold text-base mb-1">Nivel 2</h3>
+          <p class="text-xs text-gray-400">Rompecabezas</p>
+          <span id="status-2" class="inline-block mt-4 px-3 py-1 text-[11px] rounded-full bg-gray-500/10 text-gray-400 border border-gray-500/30">Bloqueado</span>
+        </div>
+
+        <div id="btn-opt-3" onclick="openGame(3)" class="glass-card p-6 rounded-2xl cursor-not-allowed opacity-40 transition">
+          <div class="text-3xl mb-3">🎴</div>
+          <h3 class="font-semibold text-base mb-1">Nivel 3</h3>
+          <p class="text-xs text-gray-400">Juego de Memoria</p>
+          <span id="status-3" class="inline-block mt-4 px-3 py-1 text-[11px] rounded-full bg-gray-500/10 text-gray-400 border border-gray-500/30">Bloqueado</span>
+        </div>
+
+        <div id="btn-opt-4" onclick="openGame(4)" class="glass-card p-6 rounded-2xl cursor-not-allowed opacity-40 transition">
+          <div class="text-3xl mb-3">🎬</div>
+          <h3 class="font-semibold text-base mb-1">Nivel 4</h3>
+          <p class="text-xs text-gray-400">Cuatro videos JIJIJI</p>
+          <span id="status-4" class="inline-block mt-4 px-3 py-1 text-[11px] rounded-full bg-gray-500/10 text-gray-400 border border-gray-500/30">Bloqueado</span>
+        </div>
+      </div>
+
+      <div id="final-unlock-zone" class="hidden mt-10 pt-8 border-t border-yellow-500/15">
+        <button onclick="startFinalCountdown()" class="w-full py-4 rounded-xl gold-button text-base tracking-wide flex items-center justify-center gap-2">
+          <span>🔑</span> Abrir el Candado Final <span>🔑</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- NIVEL 1: PREGUNTAS -->
+    <section id="sec-game-1" class="hidden w-full max-w-xl glass-card rounded-3xl p-8">
+      <button onclick="backToHub()" class="text-xs text-gray-400 hover:text-yellow-400 mb-6 flex items-center gap-1 transition">← Volver al menú</button>
+      <h2 class="font-serif-title text-2xl gold-gradient-text text-center mb-6 uppercase tracking-wider">Preguntitas</h2>
+      
+      <div id="quiz-container">
+        <p id="quiz-question" class="text-base font-medium text-center mb-6 text-gray-200 min-h-[48px]"></p>
+        <div id="quiz-options" class="space-y-3"></div>
+        <p id="quiz-feedback" class="text-xs text-center mt-4 min-h-[20px] font-medium transition-all duration-300"></p>
+      </div>
+
+      <div id="quiz-reward" class="hidden text-center">
+        <div class="w-48 h-48 mx-auto mb-6 rounded-2xl overflow-hidden border border-yellow-500/30 gold-glow">
+          <img id="quiz-photo" src="" alt="Foto Nivel 1" class="w-full h-full object-cover">
+        </div>
+        <p class="font-serif-title text-xl gold-gradient-text mb-6">"Eres lo mejor que me ha pasado es la vida amor"</p>
+        <button onclick="completeGame(1)" class="px-6 py-3 rounded-xl gold-button text-xs tracking-wider uppercase">Continuar al Nivel 2 →</button>
+      </div>
+    </section>
+
+    <!-- NIVEL 2: ROMPECABEZAS -->
+    <section id="sec-game-2" class="hidden w-full max-w-xl glass-card rounded-3xl p-8 text-center">
+      <button onclick="backToHub()" class="text-xs text-gray-400 hover:text-yellow-400 mb-6 flex items-center gap-1 transition">← Volver al menú</button>
+      <h2 class="font-serif-title text-2xl gold-gradient-text mb-2 uppercase tracking-wider">Rompecabezas</h2>
+      <p class="text-xs text-gray-400 mb-4">Haz clic en las piezas adyacentes al espacio vacío para armarlo</p>
+
+      <div class="text-xs text-yellow-400/80 mb-6">Movimientos: <strong id="puzzle-moves">0</strong></div>
+
+      <div class="flex justify-center mb-6">
+        <div id="puzzle-board" class="puzzle-board"></div>
+      </div>
+
+      <div id="puzzle-reward" class="hidden">
+        <div class="w-48 h-48 mx-auto mb-6 rounded-2xl overflow-hidden border border-yellow-500/30 gold-glow">
+          <img id="puzzle-final-photo" src="" alt="Foto Nivel 2" class="w-full h-full object-cover">
+        </div>
+        <p class="font-serif-title text-xl gold-gradient-text mb-6">"Cada pieza encaja perfectamente contigo, Mi amor"</p>
+        <button onclick="completeGame(2)" class="px-6 py-3 rounded-xl gold-button text-xs tracking-wider uppercase">Continuar al Nivel 3 →</button>
+      </div>
+    </section>
+
+    <!-- NIVEL 3: JUEGO DE MEMORIA -->
+    <section id="sec-game-3" class="hidden w-full max-w-xl glass-card rounded-3xl p-8 text-center">
+      <button onclick="backToHub()" class="text-xs text-gray-400 hover:text-yellow-400 mb-6 flex items-center gap-1 transition">← Volver al menú</button>
+      <h2 class="font-serif-title text-2xl gold-gradient-text mb-2 uppercase tracking-wider">Juego de Memoria</h2>
+      <p class="text-xs text-gray-400 mb-6">Encuentra todas las parejas para completar el nivel</p>
+
+      <div id="memory-board" class="memory-grid mb-6"></div>
+
+      <div id="memory-reward" class="hidden">
+        <p class="font-serif-title text-xl gold-gradient-text mb-6">¡Excelente! Has desbloqueado el cuarto desafío Hagamos el amor asi bien chingon</p>
+        <button onclick="completeGame(3)" class="px-6 py-3 rounded-xl gold-button text-xs tracking-wider uppercase">Continuar al Nivel 4 →</button>
+      </div>
+    </section>
+
+    <!-- NIVEL 4: CUATRO VIDEOS PARA ENCONTRAR LA LLAVE -->
+    <section id="sec-game-4" class="hidden w-full max-w-2xl glass-card rounded-3xl p-8 text-center">
+      <button onclick="backToHub()" class="text-xs text-gray-400 hover:text-yellow-400 mb-6 flex items-center gap-1 transition">← Volver al menú</button>
+      <div class="text-4xl mb-3">🎬</div>
+      <h2 class="font-serif-title text-2xl gold-gradient-text mb-2 uppercase tracking-wider">Cuatro videos 1 el correcto te amo mucho miamorcito</h2>
+      <p class="text-xs text-gray-400 mb-6">Abre y mira los cuatro videos completos. Cuando terminen los cuatro, aparecerá la llave.</p>
+
+      <div id="video-options" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <button onclick="openVideo(0)" class="glass-card p-5 rounded-2xl hover:border-yellow-500/50 transition">
+          <span class="text-3xl block mb-2">😍</span><span class="font-semibold">Video 1</span><span id="video-status-0" class="block text-xs text-gray-400 mt-2">Por ver</span>
+        </button>
+        <button onclick="openVideo(1)" class="glass-card p-5 rounded-2xl hover:border-yellow-500/50 transition">
+          <span class="text-3xl block mb-2">🌹</span><span class="font-semibold">Video 2</span><span id="video-status-1" class="block text-xs text-gray-400 mt-2">Por ver</span>
+        </button>
+        <button onclick="openVideo(2)" class="glass-card p-5 rounded-2xl hover:border-yellow-500/50 transition">
+          <span class="text-3xl block mb-2">💖</span><span class="font-semibold">Video 3</span><span id="video-status-2" class="block text-xs text-gray-400 mt-2">Por ver</span>
+        </button>
+        <button onclick="openVideo(3)" class="glass-card p-5 rounded-2xl hover:border-yellow-500/50 transition">
+          <span class="text-3xl block mb-2">✨</span><span class="font-semibold">Video 4</span><span id="video-status-3" class="block text-xs text-gray-400 mt-2">Por ver</span>
+        </button>
+      </div>
+
+      <div id="video-player-wrap" class="hidden mt-6 text-left">
+        <h3 id="video-title" class="font-serif-title text-lg gold-gradient-text mb-3 text-center">Video especial</h3>
+        <video id="special-video" class="w-full rounded-2xl border border-yellow-500/30 bg-black" controls playsinline preload="metadata">
+          Tu navegador no puede reproducir este video.
+        </video>
+        <p id="video-help" class="text-xs text-gray-400 mt-3 text-center">Mira el video hasta el final para marcarlo como visto.</p>
+        <div class="flex justify-center mt-4">
+          <button onclick="closeVideo()" class="px-5 py-2 rounded-xl border border-yellow-500/30 text-xs text-gray-300 hover:bg-yellow-500/10 transition">Volver a los cuatro videos</button>
+        </div>
+      </div>
+
+      <div id="video-key-reward" class="hidden mt-8 pt-6 border-t border-yellow-500/20">
+        <div class="text-6xl mb-3 gold-glow inline-block rounded-full p-4">🗝️</div>
+        <h3 class="font-serif-title text-2xl gold-gradient-text mb-2">¡Encontraste la llave!</h3>
+        <p class="text-sm text-gray-300 mb-5">Viste los cuatro videos y desbloqueaste la última llave. Ahora puedes abrir el candado final.</p>
+        <button onclick="completeGame(4)" class="px-6 py-3 rounded-xl gold-button text-xs tracking-wider uppercase">Tomar la llave 🔑</button>
+      </div>
+    </section>
+
+    <!-- CUENTA REGRESIVA FINAL -->
+    <section id="sec-countdown" class="hidden w-full max-w-md glass-card rounded-3xl p-10 text-center">
+      <div class="text-5xl mb-4 animate-pulse">💓</div>
+      <h2 class="font-serif-title text-xl gold-gradient-text mb-2">Abriendo Candado Final...</h2>
+      <div id="timer-display" class="font-mono text-6xl font-bold gold-gradient-text my-6">3</div>
+    </section>
+
+    <!-- CARTA Y PROPUESTA FINAL -->
+    <section id="sec-proposal" class="hidden w-full max-w-2xl glass-card rounded-3xl p-8 md:p-12 text-center relative overflow-hidden">
+      <div class="text-4xl mb-4">💖</div>
+      <h2 id="proposal-title" class="font-serif-title text-3xl md:text-4xl gold-gradient-text mb-6">Para mi querida Papita preciosa</h2>
+      
+      <div id="letter-content" class="text-left space-y-4 text-sm text-gray-300 leading-relaxed mb-8 max-h-60 overflow-y-auto pr-2">
+        <p>Desde el día en que entraste en mi vida, todo comenzó a tener un sentido hermoso y diferente. Tu sonrisa ilumina mis días, tu forma de mirarme me enamora una y otra vez, y tu manera de ser hace que cada día me sienta más afortunado de tenerte en mi vida. Eres mi refugio, mi felicidad y esa personita con la que quiero construir muchísimos recuerdos más.</p>
+        <p>Mi amor, hoy preparé esto para ti porque quiero que sepas lo que siento desde lo más profundo de mi corazón. Quizás no siempre encuentre las palabras perfectas para expresar todo lo que llevo dentro, pero quiero que sepas que cada palabra que te escribo es sincera y viene de lo más profundo de mí. Aunque por ahora nuestro amor se viva a través de una pantalla y la distancia nos impida abrazarnos cuando más queremos, mis sentimientos por ti son reales, inmensos y cada día crecen más.</p>
+        <p>Coni, me gustas muchísimo. Desde el primer día en que hablamos sentí una conexión tan bonita, tan real y tan natural que hasta hoy me sorprende. Todo fluyó de una manera tan linda que me hizo darme cuenta de que había algo especial en ti. Estoy muy agradecido de que hayas aparecido en mi vida, porque desde que te conocí has llenado mis días de alegría, cariño y emociones que hace mucho tiempo no sentía de esta manera.</p>
+        <p>A veces pienso en lo mucho que deseo que llegue el día en que por fin podamos vernos en persona, mirarnos a los ojos, abrazarnos y sentir que toda esta distancia queda atrás, aunque sea por un momento. Espero ese día con muchísimas ansias, porque quiero demostrarte en persona todo el amor que siento por ti. Quiero abrazarte fuerte, darte besitos, tomarte de la mano y hacerte sentir lo importante que eres para mí. Quiero que cuando estés conmigo puedas sentirte querida, segura y tranquila, porque mi intención es cuidarte, amarte y respetarte como te mereces.</p>
+        <p>Y quiero que tengas algo muy claro, mi amor: cuando te digo que quiero estar contigo, no lo digo por decir ni quiero que sean palabras bonitas que se queden en una promesa vacía. Lo digo porque realmente lo siento. Aunque estuvieras al otro lado del mundo, yo querría encontrar la manera de acercarme a ti, de seguir construyendo lo nuestro y de demostrarte que la distancia no cambia lo que siento. Sé que no todo será fácil y que habrá momentos en los que nos extrañemos más de la cuenta, pero quiero que sepas que estoy dispuesto a poner de mi parte, a tener paciencia y a luchar por lo bonito que estamos construyendo juntos. Porque yo no quiero algo pasajero contigo, Coni; quiero algo real, bonito y duradero. Quiero elegirte hoy, mañana y cada día que la vida nos permita compartir.</p>
+        <p>Te amo demasiado, mi niña. Quiero cuidarte, amarte, respetarte, escucharte y acompañarte en cada etapa de tu vida. Quiero estar en tus días buenos, celebrar tus logros y ser esa persona con la que puedas hablar cuando las cosas no estén saliendo como esperabas. No quiero estar solamente para tus sonrisas; también quiero acompañarte cuando estés triste, cuando tengas miedo, cuando dudes de ti misma o cuando sientas que todo se vuelve demasiado difícil. Quiero recordarte lo increíble que eres, incluso en esos días en los que tú misma no puedas verlo.</p>
+        <p>Desde que nos conocimos, siento que alumbraste una parte de mi vida de una manera muy especial. Tu hermoso carácter, tu personalidad y esa forma tan tuya de ser me han hecho descubrir cada día un poquito más de la maravillosa persona que eres. Con el tiempo he podido conocer más de ti y, sinceramente, cada cosa nueva que descubro hace que me gustes todavía más. Me encanta la forma en que me tratas, cómo me haces sentir y esa felicidad que aparece en mí cuando hablamos. Espero de corazón que esa llamita tan bonita que tenemos nunca se apague y que, con el tiempo, podamos hacerla crecer cada vez más.</p>
+        <p>Llevamos dos meses, mi amor, pero a veces siento como si te conociera desde hace muchísimo más tiempo. Es algo que me parece muy loco, pero al mismo tiempo me encanta, porque nunca antes me había sentido tan amado, tan querido y tan feliz de compartir mis días con alguien. Contigo he descubierto una sensación muy bonita, esa tranquilidad de poder ser yo mismo y sentir que hay alguien especial al otro lado que me escucha, me comprende y me entrega cariño. Gracias por hacerme sentir así, por cada conversación, por cada risa, por cada momento que compartimos y por todas esas pequeñas cosas que quizás para ti sean simples, pero que para mí significan muchísimo.</p>
+        <p>Me encanta tu voz, tu humor, tus ojos, tu sonrisa y tu manera de hacer que hasta una conversación sencilla se convierta en algo especial. Me encanta cuando me haces reír, cuando me cuentas tus cosas y cuando simplemente compartimos nuestro tiempo, aunque sea a través de una pantalla. Me encantas tú, Coni, no solamente por las cosas bonitas que veo en ti, sino también por esa esencia tan especial que te hace ser quien eres. Sé que todavía me quedan muchísimas cosas por conocer de ti, sueños que descubrir, historias que escuchar, gustos que aprender y momentos que vivir a tu lado. Y ¿sabes qué es lo más bonito? Que quiero conocerlos todos, poco a poco, sin apuros, disfrutando cada etapa y descubriendo cada día nuevas razones para enamorarme de ti.</p>
+        <p>También quiero decirte que estoy muy orgulloso de ti, mi amor. Estoy orgulloso de todo lo que haces, de cada meta que has alcanzado y de todas las veces que, incluso cuando no tienes ganas de levantarte o sientes que ya no puedes más, encuentras la fuerza para seguir adelante. Quizás tú no siempre te des cuenta, pero yo veo en ti a una persona increíblemente fuerte, valiente y capaz de lograr muchísimas cosas. Admiro esa fuerza que tienes, incluso en los momentos en los que te cuesta reconocerla. Quiero que nunca olvides que tienes muchísimo valor y que mereces sentirte orgullosa de la persona en la que te estás convirtiendo.</p>
+        <p>Mi amor, quiero que sepas que tienes todo mi apoyo. Quiero estar para ti, escucharte cuando necesites desahogarte, animarte cuando te falten fuerzas y recordarte que no tienes que poder con todo tú sola. No puedo prometerte que siempre tendré las palabras perfectas ni que podré solucionar cada problema, pero sí quiero esforzarme por ser alguien que te acompañe, que te escuche y que te haga sentir que no estás sola. Cuando lleguen los días difíciles, quiero recordarte que después de la tormenta también sale el sol, y que incluso en los momentos más oscuros todavía existen motivos para seguir adelante. Y si algún día se te olvida lo maravillosa que eres, espero poder ayudarte a recordarlo.</p>
+        <p>Tal vez este texto no sea perfecto y quizás no sepa expresar todo lo que siento de la manera más bonita del mundo, porque muchas veces me cuesta encontrar las palabras para explicar lo que pasa por mi corazón. Pero esta es mi manera de demostrarte lo mucho que significas para mí. No necesito escribir las frases más elegantes ni hacer promesas imposibles; solamente quiero que sientas la sinceridad con la que te escribo cada una de estas palabras. Porque detrás de cada línea hay un niño enamorado que está muy feliz de haberte encontrado y que desea seguir construyendo algo hermoso contigo.</p>
+        <p>Coni, mi amor, quiero todo contigo. Quiero más conversaciones interminables, más risas, más momentos bonitos, más recuerdos y, sobre todo, quiero que llegue el día en que ya no tengamos que despedirnos a través de una pantalla, sino que podamos abrazarnos y disfrutar de estar juntos. Quiero conocer cada versión de ti, acompañarte mientras creces, verte cumplir tus sueños y compartir también los míos contigo. Quiero que aprendamos el uno del otro, que nos apoyemos, que podamos hablar con sinceridad y que, cuando tengamos dificultades, busquemos la manera de solucionarlas juntos.</p>
+        <p>No sé exactamente qué nos tiene preparado el futuro, mi niña, pero sí sé lo que deseo construir contigo. Quiero que lo nuestro siga creciendo de una forma bonita y sincera, que nunca nos falten las ganas de conocernos, de cuidarnos y de demostrar el amor que sentimos. Quiero que algún día podamos mirar hacia atrás y recordar estos primeros meses, esta distancia y todas las veces que nos extrañamos, sabiendo que cada momento también formó parte de nuestra historia.</p>
+        <p>Gracias por aparecer en mi vida, por ser tú, por tratarme tan bonito y por hacerme sentir tantas cosas hermosas. Gracias por cada detalle, por tu cariño, por tu tiempo y por cada momento en el que, sin darte cuenta, consigues sacarme una sonrisa. Gracias por dejarme conocerte y por permitirme formar parte de tu vida. No sabes lo feliz que me hace tenerte y lo mucho que deseo seguir compartiendo contigo.</p>
+        <p>Te amo demasiado, mi Coni hermosa. Me encantas más de lo que a veces sé explicar y quiero que nunca dudes de lo importante que eres para mí. Si pudiera pedir algo en este momento, sería que la vida nos diera la oportunidad de seguir juntos, de acortar esta distancia y de convertir todos esos abrazos que imaginamos en recuerdos reales. Quiero darte todo ese amor que hoy te escribo y demostrarte, con mis acciones y no solamente con mis palabras, que lo que siento por ti es verdadero.</p>
+        <p>Ojalá estas palabras lleguen a tu corazón y te hagan sentir, aunque sea un poquito, todo el amor que tengo guardado para ti. Porque si hay algo que quiero que te quede claro después de leer esto, es que me haces muy feliz, que estoy orgulloso de ti, que te admiro muchísimo y que me siento demasiado afortunado de haberte conocido.</p>
+        <p>Te amo, mi niña. Hoy, mañana y en cada nuevo día que tengamos la oportunidad de compartir. Gracias por estos dos meses tan bonitos y por darme tantas razones para sonreír. Esto recién comienza, mi amor, y me hace muy feliz pensar en todo lo lindo que todavía nos queda por vivir juntos.</p>
+        <p>Con todo mi amor, para ti, mi Coni hermosa. ❤️</p>
+        <p class="font-semibold text-yellow-300">Mi amor hoy te prepare esto para decirte lo que sieento desde el fondo de mi corazón...</p>
+      </div>
+
+      <div id="proposal-box" class="pt-6 border-t border-yellow-500/15">
+        <p class="text-2xl md:text-3xl font-serif-title text-pink-400 mb-8">¿Quieres Tener un Futuro Conmigo?</p>
+        
+        <div class="relative min-h-[100px] flex items-center justify-center gap-6 flex-wrap">
+          <button id="btn-yes" onclick="acceptProposal()" class="px-8 py-4 rounded-xl gold-button text-base z-20">
+            ¡SÍ, SÚPER SÍ! ❤️
+          </button>
+          
+          <button id="btn-no" class="px-6 py-3 rounded-xl bg-black/40 border border-gray-700 text-gray-400 text-xs hover:bg-black/60 transition">
+            No...
+          </button>
+        </div>
+      </div>
+
+      <div id="accepted-message" class="hidden space-y-6">
+        <div class="text-5xl">❤️❤️❤️</div>
+        <h3 class="font-serif-title text-3xl text-pink-400 gold-gradient-text">¡TE AMO DEMACIADO, CONINI DE MI CORAZON!</h3>
+        <p class="text-sm text-gray-300">Prometo hacerte la persona más feliz del mundo hoy y siempre. Te amo infinitamente.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="relative z-10 w-full text-center py-4 text-[11px] text-gray-600 tracking-wider">
+    CREADO CON AMOR PARA MI FUTURA ESPOSA
+  </footer>
+
+  <script>
+    // CONFIGURACIÓN DE FOTOS Y PREGUNTAS
+    const CONFIG = {
+      fotoQuiz: "foto-preguntas.jpg", // Foto para el Nivel 1 (Preguntas)
+      fotoPuzzle: "foto-puzzle.jpg",   // Foto para el Nivel 2 (Rompecabezas)
+      preguntas: [
+        {
+          q: "¿Cuál es el detalle que más me enamora de ti, Mi papita?",
+          options: ["Tu sonrisa contagiosa", "Tu mirada brillante", "Tu forma de ser tan dulce", "¡Todo de ti me fascinan!"],
+          correct: 3 // Índice de la respuesta correcta (0 es la primera opción)
+        },
+        {
+          q: "Si tuvieras que definir nuestra historia en una palabra, ¿cuál sería?",
+          options: ["Aventura", "Magia", "Destino", "Infinita"],
+          correct: 2
+        }
+      ]
+    };
+
+    // Control de Login
+    function handleLogin(e) {
+      e.preventDefault();
+      const pass = document.getElementById('login-pass').value.trim();
+      const err = document.getElementById('login-error');
+
+      // La única contraseña válida es 190826.
+      if (pass === '190826') {
+        document.getElementById('sec-login').classList.add('hidden');
+        document.getElementById('sec-intro').classList.remove('hidden');
+        err.classList.add('hidden');
+        initIntroChests();
+      } else {
+        err.innerText = "Contraseña incorrecta. Inténtalo de nuevo.";
+        err.classList.remove('hidden');
+        document.getElementById('login-pass').value = '';
+        document.getElementById('login-pass').focus();
+      }
+    }
+
+    let completedGames = [false, false, false, false];
+    let audioContextStarted = false;
+
+    const noPhrases = [
+      "¿Estás completamente segura, Mi papita? 🥺",
+      "Piénsalo bien, ¡te daré mucho amor!",
+      "¡Esa opción no es válida! ",
+      "El botón 'Sí' te queda más cerca ❤️",
+      "¡No te dejaré presionar que no! ",
+      "¡Acepta que me amas! ✨"
+    ];
+    let noClickCount = 0;
+
+    // Fondo Animado (Canvas)
+    const canvas = document.getElementById('bg-canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    class Particle {
+      constructor() { this.reset(); }
+      reset() {
+        this.x = Math.random() * canvas.width;
+        this.y = canvas.height + 20;
+        this.size = Math.random() * 8 + 4;
+        this.speedY = Math.random() * 1 + 0.3;
+        this.speedX = (Math.random() - 0.5) * 0.5;
+        this.opacity = Math.random() * 0.4 + 0.1;
+        this.symbol = Math.random() > 0.5 ? '✨' : '•';
+      }
+      update() {
+        this.y -= this.speedY;
+        this.x += this.speedX;
+        if (this.y < -20) this.reset();
+      }
+      draw() {
+        ctx.globalAlpha = this.opacity;
+        ctx.font = `${this.size}px sans-serif`;
+        ctx.fillStyle = "#d4af37";
+        ctx.fillText(this.symbol, this.x, this.y);
+      }
+    }
+
+    for (let i = 0; i < 30; i++) particles.push(new Particle());
+
+    function animateParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => { p.update(); p.draw(); });
+      requestAnimationFrame(animateParticles);
+    }
+    animateParticles();
+
+    // Control de Música
+    const audio = document.getElementById('bg-music-audio');
+    const musicBtn = document.getElementById('music-toggle');
+    const musicBtnText = document.getElementById('music-btn-text');
+
+    function toggleMusic() {
+      if (audio.paused) {
+        audio.play().then(() => { musicBtnText.innerText = "Música ON"; }).catch(() => {});
+      } else {
+        audio.pause();
+        musicBtnText.innerText = "Música OFF";
+      }
+    }
+    musicBtn.addEventListener('click', toggleMusic);
+
+    document.addEventListener('click', () => {
+      if (!audioContextStarted) {
+        audioContextStarted = true;
+        if (audio.paused) {
+          audio.play().then(() => { musicBtnText.innerText = "Música ON"; }).catch(() => {});
+        }
+      }
+    }, { once: true });
+
+    // Cofres del Portal
+    function initIntroChests() {
+      const grid = document.getElementById('chest-grid');
+      grid.innerHTML = '';
+      const keyIndex = Math.floor(Math.random() * 8);
+
+      for (let i = 0; i < 8; i++) {
+        const box = document.createElement('div');
+        box.className = "glass-card p-4 rounded-2xl cursor-pointer text-2xl hover:scale-105 transition text-center border border-yellow-500/10 hover:border-yellow-500/40";
+        box.innerText = "📦";
+        box.onclick = () => {
+          if (i === keyIndex) {
+            box.innerText = "🗝️";
+            box.classList.add("gold-glow");
+            document.getElementById('chest-hint').innerText = "¡Llave encontrada! Accediendo al menú...";
+            setTimeout(() => {
+              document.getElementById('sec-intro').classList.add('hidden');
+              document.getElementById('sec-hub').classList.remove('hidden');
+            }, 1000);
+          } else {
+            box.innerText = "❌";
+            document.getElementById('chest-hint').innerText = "Cofre vacío... Sigue buscando.";
+          }
+        };
+        grid.appendChild(box);
+      }
+    }
+
+    // Navegación
+    function backToHub() {
+      document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
+      document.getElementById('sec-hub').classList.remove('hidden');
+    }
+
+    function openGame(num) {
+      if (num > 1 && !completedGames[num - 2]) return;
+
+      document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
+      document.getElementById(`sec-game-${num}`).classList.remove('hidden');
+
+      if (num === 1) startQuiz();
+      if (num === 2) startPuzzle();
+      if (num === 3) startMemory();
+      if (num === 4) {
+        closeVideo();
+        updateVideoProgress();
+      }
+    }
+
+    function completeGame(num) {
+      completedGames[num - 1] = true;
+      if (num < 4) {
+        const nextStatus = document.getElementById(`status-${num + 1}`);
+        const nextBtn = document.getElementById(`btn-opt-${num + 1}`);
+        nextStatus.innerText = "Disponible";
+        nextStatus.className = "inline-block mt-4 px-3 py-1 text-[11px] rounded-full bg-yellow-500/10 text-yellow-300 border border-yellow-500/30";
+        nextBtn.classList.remove('opacity-40', 'cursor-not-allowed');
+        nextBtn.classList.add('cursor-pointer', 'hover:border-yellow-500/40');
+      }
+
+      if (completedGames.every(g => g)) {
+        document.getElementById('final-unlock-zone').classList.remove('hidden');
+      }
+      backToHub();
+    }
+
+    // NIVEL 4: VIDEOS Y LLAVE FINAL
+    const specialVideos = [
+      { title: "Video 1: random", src: "video1.mp4" },
+      { title: "Video 2: random", src: "video2.mp4" },
+      { title: "Video 3: te dedico esta cancion miamorchito", src: "video3.mp4" },
+      { title: "Video 4: random", src: "video4.mp4" }
+    ];
+    const videosWatched = [false, false, false, false];
+    let activeVideoIndex = -1;
+
+    function openVideo(index) {
+      activeVideoIndex = index;
+      const playerWrap = document.getElementById('video-player-wrap');
+      const video = document.getElementById('special-video');
+      document.getElementById('video-options').classList.add('hidden');
+      playerWrap.classList.remove('hidden');
+      document.getElementById('video-title').innerText = specialVideos[index].title;
+      document.getElementById('video-help').innerText = videosWatched[index]
+        ? 'Ya viste este video. Puedes volver a reproducirlo cuando quieras.'
+        : 'Mira el video hasta el final para marcarlo como visto.';
+      video.pause();
+      video.src = specialVideos[index].src;
+      video.load();
+      const playAttempt = video.play();
+      if (playAttempt && typeof playAttempt.catch === 'function') playAttempt.catch(() => {});
+    }
+
+    function closeVideo() {
+      const video = document.getElementById('special-video');
+      if (video) {
+        video.pause();
+        video.removeAttribute('src');
+        video.load();
+      }
+      const wrap = document.getElementById('video-player-wrap');
+      const options = document.getElementById('video-options');
+      if (wrap) wrap.classList.add('hidden');
+      if (options) options.classList.remove('hidden');
+      activeVideoIndex = -1;
+    }
+
+    document.getElementById('special-video').addEventListener('ended', () => {
+      if (activeVideoIndex >= 0) {
+        videosWatched[activeVideoIndex] = true;
+        updateVideoProgress();
+        document.getElementById(`video-status-${activeVideoIndex}`).innerText = 'Visto ✓';
+        document.getElementById(`video-status-${activeVideoIndex}`).className = 'block text-xs text-green-400 mt-2';
+        document.getElementById('video-help').innerText = '¡Video completado! Puedes volver a los cuatro videos.';
+      }
+    });
+
+    function updateVideoProgress() {
+      videosWatched.forEach((watched, index) => {
+        const status = document.getElementById(`video-status-${index}`);
+        if (status) {
+          status.innerText = watched ? 'Visto ✓' : 'Por ver';
+          status.className = watched ? 'block text-xs text-green-400 mt-2' : 'block text-xs text-gray-400 mt-2';
+        }
+      });
+      if (videosWatched.every(Boolean)) {
+        document.getElementById('video-key-reward').classList.remove('hidden');
+      }
+    }
+
+    // LÓGICA NIVEL 1: PREGUNTAS
+    let currentQuizIndex = 0;
+    let isAnswerProcessing = false;
+
+    function startQuiz() {
+      currentQuizIndex = 0;
+      isAnswerProcessing = false;
+      document.getElementById('quiz-container').classList.remove('hidden');
+      document.getElementById('quiz-reward').classList.add('hidden');
+      document.getElementById('quiz-photo').src = CONFIG.fotoQuiz;
+      showQuizQuestion();
+    }
+
+    function showQuizQuestion() {
+      isAnswerProcessing = false;
+      const qData = CONFIG.preguntas[currentQuizIndex];
+      document.getElementById('quiz-question').innerText = qData.q;
+      const feedbackEl = document.getElementById('quiz-feedback');
+      feedbackEl.innerText = "";
+      feedbackEl.className = "text-xs text-center mt-4 min-h-[20px] font-medium transition-all duration-300";
+
+      const optsDiv = document.getElementById('quiz-options');
+      optsDiv.innerHTML = '';
+
+      qData.options.forEach((opt, index) => {
+        const btn = document.createElement('button');
+        btn.className = "w-full py-3.5 px-5 rounded-xl glass-card text-left text-xs text-gray-200 hover:border-yellow-500/40 transition-all duration-200 flex items-center justify-between";
+        btn.innerHTML = `<span>${opt}</span><span class="status-icon text-sm"></span>`;
+        btn.onclick = () => handleAnswerSelect(index, btn, qData.correct);
+        optsDiv.appendChild(btn);
+      });
+    }
+
+    function handleAnswerSelect(selectedIndex, btnElement, correctIndex) {
+      if (isAnswerProcessing || btnElement.disabled) return;
+
+      const feedbackEl = document.getElementById('quiz-feedback');
+
+      if (selectedIndex === correctIndex) {
+        isAnswerProcessing = true;
+        btnElement.classList.add('btn-correct');
+        btnElement.querySelector('.status-icon').innerText = '✨';
+        feedbackEl.innerText = "¡Correcto! ❤️";
+        feedbackEl.className = "text-xs text-center mt-4 min-h-[20px] font-medium text-green-400";
+
+        setTimeout(() => {
+          currentQuizIndex++;
+          if (currentQuizIndex < CONFIG.preguntas.length) {
+            showQuizQuestion();
+          } else {
+            document.getElementById('quiz-container').classList.add('hidden');
+            document.getElementById('quiz-reward').classList.remove('hidden');
+            confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
+          }
+        }, 1000);
+      } else {
+        btnElement.classList.add('btn-wrong');
+        btnElement.disabled = true;
+        btnElement.querySelector('.status-icon').innerText = '❌';
+        feedbackEl.innerText = "¡Casi! Intenta con otra opción... 😉";
+        feedbackEl.className = "text-xs text-center mt-4 min-h-[20px] font-medium text-red-400 animate-pulse";
+      }
+    }
+
+    // LÓGICA NIVEL 2: ROMPECABEZAS
+    let puzzleBoard = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+    let emptyIndex = 8;
+    let puzzleMoves = 0;
+
+    function startPuzzle() {
+      puzzleMoves = 0;
+      document.getElementById('puzzle-moves').innerText = "0";
+      document.getElementById('puzzle-reward').classList.add('hidden');
+      document.getElementById('puzzle-board').classList.remove('hidden');
+      document.getElementById('puzzle-final-photo').src = CONFIG.fotoPuzzle;
+
+      do {
+        for (let i = puzzleBoard.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [puzzleBoard[i], puzzleBoard[j]] = [puzzleBoard[j], puzzleBoard[i]];
+        }
+      } while (!isPuzzleSolvable() || isPuzzleSolved());
+
+      emptyIndex = puzzleBoard.indexOf(8);
+      renderPuzzle();
+    }
+
+    function isPuzzleSolvable() {
+      let inversions = 0;
+      for (let i = 0; i < 9; i++) {
+        for (let j = i + 1; j < 9; j++) {
+          if (puzzleBoard[i] !== 8 && puzzleBoard[j] !== 8 && puzzleBoard[i] > puzzleBoard[j]) inversions++;
+        }
+      }
+      return inversions % 2 === 0;
+    }
+
+    function isPuzzleSolved() {
+      return puzzleBoard.every((val, idx) => val === idx);
+    }
+
+    function renderPuzzle() {
+      const board = document.getElementById('puzzle-board');
+      board.innerHTML = '';
+
+      puzzleBoard.forEach((tile, index) => {
+        const div = document.createElement('div');
+        if (tile === 8 && !isPuzzleSolved()) {
+          div.className = "puzzle-empty";
+        } else {
+          div.className = "puzzle-tile";
+          div.style.backgroundImage = `url(${CONFIG.fotoPuzzle})`;
+          const row = Math.floor(tile / 3);
+          const col = tile % 3;
+          div.style.backgroundPosition = `-${col * 106}px -${row * 106}px`;
+          div.onclick = () => movePuzzleTile(index);
+        }
+        board.appendChild(div);
+      });
+    }
+
+    function movePuzzleTile(index) {
+      const isSameRow = Math.floor(index / 3) === Math.floor(emptyIndex / 3);
+      const isSameCol = index % 3 === emptyIndex % 3;
+
+      if ((isSameRow && Math.abs(index - emptyIndex) === 1) || (isSameCol && Math.abs(index - emptyIndex) === 3)) {
+        [puzzleBoard[index], puzzleBoard[emptyIndex]] = [puzzleBoard[emptyIndex], puzzleBoard[index]];
+        emptyIndex = index;
+        puzzleMoves++;
+        document.getElementById('puzzle-moves').innerText = puzzleMoves;
+        renderPuzzle();
+
+        if (isPuzzleSolved()) {
+          setTimeout(() => {
+            document.getElementById('puzzle-board').classList.add('hidden');
+            document.getElementById('puzzle-reward').classList.remove('hidden');
+            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+          }, 300);
+        }
+      }
+    }
+
+    // LÓGICA NIVEL 3: MEMORIA
+    const memorySymbols = ['💖', '🌹', '👑', '💌', '🧸', '💍', '✨', '🎁'];
+    let flippedCards = [];
+    let matchedPairs = 0;
+
+    function startMemory() {
+      matchedPairs = 0;
+      flippedCards = [];
+      document.getElementById('memory-reward').classList.add('hidden');
+      document.getElementById('memory-board').classList.remove('hidden');
+
+      const deck = [...memorySymbols, ...memorySymbols].sort(() => Math.random() - 0.5);
+      const board = document.getElementById('memory-board');
+      board.innerHTML = '';
+
+      deck.forEach((sym) => {
+        const container = document.createElement('div');
+        container.className = "card-flip h-20 cursor-pointer";
+        container.innerHTML = `
+          <div class="card-inner w-full h-full relative">
+            <div class="card-front absolute inset-0 glass-card flex items-center justify-center text-lg border border-yellow-500/20">❓</div>
+            <div class="card-back absolute inset-0 bg-gradient-to-br from-amber-950 to-red-950 border border-yellow-500/40 rounded-xl flex items-center justify-center text-2xl">${sym}</div>
+          </div>
+        `;
+        container.onclick = () => flipMemoryCard(container, sym);
+        board.appendChild(container);
+      });
+    }
+
+    function flipMemoryCard(card, sym) {
+      if (flippedCards.length >= 2 || card.classList.contains('flipped') || card.classList.contains('matched')) return;
+
+      card.classList.add('flipped');
+      flippedCards.push({ card, sym });
+
+      if (flippedCards.length === 2) {
+        if (flippedCards[0].sym === flippedCards[1].sym) {
+          flippedCards.forEach(c => c.card.classList.add('matched'));
+          flippedCards = [];
+          matchedPairs++;
+          if (matchedPairs === memorySymbols.length) {
+            setTimeout(() => {
+              document.getElementById('memory-board').classList.add('hidden');
+              document.getElementById('memory-reward').classList.remove('hidden');
+              confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            }, 500);
+          }
+        } else {
+          setTimeout(() => {
+            flippedCards.forEach(c => c.card.classList.remove('flipped'));
+            flippedCards = [];
+          }, 800);
+        }
+      }
+    }
+
+    // LÓGICA ETAPA FINAL Y PROPUESTA
+    function startFinalCountdown() {
+      document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
+      document.getElementById('sec-countdown').classList.remove('hidden');
+
+      let count = 3;
+      const timerEl = document.getElementById('timer-display');
+      
+      const interval = setInterval(() => {
+        count--;
+        if (count > 0) {
+          timerEl.innerText = count;
+        } else {
+          clearInterval(interval);
+          document.getElementById('sec-countdown').classList.add('hidden');
+          document.getElementById('sec-proposal').classList.remove('hidden');
+          confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+        }
+      }, 1000);
+    }
+
+    const btnNo = document.getElementById('btn-no');
+    const btnYes = document.getElementById('btn-yes');
+
+    btnNo.addEventListener('mouseover', moveNoButton);
+    btnNo.addEventListener('click', moveNoButton);
+
+    function moveNoButton() {
+      noClickCount++;
+      const x = (Math.random() - 0.5) * 180;
+      const y = (Math.random() - 0.5) * 120;
+      btnNo.style.transform = `translate(${x}px, ${y}px)`;
+      
+      const phraseIndex = noClickCount % noPhrases.length;
+      btnNo.innerText = noPhrases[phraseIndex];
+
+      const currentScale = 1 + (noClickCount * 0.08);
+      btnYes.style.transform = `scale(${currentScale})`;
+    }
+
+    function acceptProposal() {
+      document.getElementById('proposal-box').classList.add('hidden');
+      document.getElementById('letter-content').classList.add('hidden');
+      document.getElementById('proposal-title').classList.add('hidden');
+      document.getElementById('accepted-message').classList.remove('hidden');
+
+      const duration = 5 * 1000;
+      const animationEnd = Date.now() + duration;
+
+      (function frame() {
+        confetti({ particleCount: 6, angle: 60, spread: 55, origin: { x: 0 } });
+        confetti({ particleCount: 6, angle: 120, spread: 55, origin: { x: 1 } });
+        if (Date.now() < animationEnd) requestAnimationFrame(frame);
+      })();
+    }
+  </script>
+</body>
+</html>
